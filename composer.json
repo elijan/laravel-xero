@@ -1,0 +1,26 @@
+{
+    "name": "elijan/laravel-xero",
+    "description": "",
+    "authors": [
+        {
+            "name": "Dealsealer",
+            "email": "elijan.sejic@dealsealer.com.au"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "calcinai/xero-php": "dev-master"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/elijan/xero-php.git"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "Elijan\\LaravelXero": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}
