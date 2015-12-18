@@ -10,8 +10,8 @@ return  ['xero' => array(
             'oauth' => array(
             'callback'    => 'oob',
 
-            'consumer_key'      => 'QHC8I6RCQWLK0RCHJVJTEBKI9HQZZH',
-            'consumer_secret'   => 'CAABYOX54D7DHBCNZJPTW917MRNFNN',
+            'consumer_key'      => 'KEY',
+            'consumer_secret'   => 'KEY',
 
             //If you have issues passing the Authorization header, you can set it to append to the query string
             //'signature_location'    => \XeroPHP\Remote\OAuth\Client::SIGN_LOCATION_QUERY
