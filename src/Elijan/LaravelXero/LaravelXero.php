@@ -1,9 +1,12 @@
 <?php namespace Elijan\LaravelXero;
 
+use GuzzleHttp\Subscriber\Redirect;
 use Illuminate\Config\Repository;
-
+use Illuminate\Support\Facades\Session;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
+use \XeroPHP\Remote\URL;
+use \XeroPHP\Remote\Request;
 
 class LaravelXero {
 
@@ -25,7 +28,117 @@ class LaravelXero {
 
         $this->log->addInfo("Init Connection....".serialize($this->config));
 
-        $this->xero = new \XeroPHP\Application\PrivateApplication($this->config);
+        $this->xero = new \XeroPHP\Application\PublicApplication($this->config);
+
+    }
+
+
+    function setOAuthSession($token, $secret, $expires = null){
+
+       Session::put('oauth',['token' => $token, 'token_secret' => $secret,'expires' => time()+$expires]);
+       Session::save();
+
+    }
+
+    function getOAuthSession($request = true){
+
+        //If it doesn't exist or is expired, return null, but just for request
+        $oauth = \Session::get('oauth');
+        if (!$oauth || $oauth['expires'] == null || ($oauth['expires'] !== null && $oauth['expires'] <= time()))
+             return null;
+
+
+        return $oauth;
+    }
+
+
+    /**
+     * @throws \XeroPHP\Exception
+     *
+     * verify Auth token
+     */
+
+    public function verify(){
+
+        $oauth_session = Session::get('oauth');
+
+        $this->xero->getOAuthClient()
+            ->setToken($oauth_session['token'])
+            ->setTokenSecret($oauth_session['token_secret']);
+
+        if(\Input::get('oauth_verifier')){
+
+            $this->xero->getOAuthClient()->setVerifier(\Input::get('oauth_verifier'));
+            $url = new URL($this->xero, URL::OAUTH_ACCESS_TOKEN);
+
+            $request = new Request($this->xero, $url);
+
+            $request->send();
+            $oauth_response = $request->getResponse()->getOAuthResponse();
+
+            $this->setOAuthSession($oauth_response['oauth_token'], $oauth_response['oauth_token_secret'], $oauth_response['oauth_expires_in']);
+            return true;
+        }
+
+        if($this->getOAuthSession()==null){
+
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function authorize(){
+
+        //check if auth user xero_gui exist
+
+        if(\Auth::account()->xero_guid==null){
+
+            return ['error'=>true, 'message'=>" You don't have NDIA account setup. Please click <a href='/settings'> Edit Account </a> to add NDIA settings"];
+
+        }
+
+        if(null === $oauth_session = $this->getOAuthSession() ){
+
+            $url = new URL($this->xero, URL::OAUTH_REQUEST_TOKEN);
+            $request = new Request($this->xero, $url);
+
+            //Here's where you'll see if your keys are valid.  You can catch a BadRequestException.
+            try {
+                $request->send();
+            } catch (\Exception $e){
+                print_r($e);
+                if ($request->getResponse()) {
+                    print_r($request->getResponse()->getOAuthResponse());
+                }
+            }
+
+            $oauth_response = $request->getResponse()->getOAuthResponse();
+
+            $this->setOAuthSession($oauth_response['oauth_token'], $oauth_response['oauth_token_secret']);
+
+            return ['error'=>false, 'url'=>$this->xero->getAuthorizeURL($oauth_response['oauth_token'])];
+            exit;
+            //return Response::json(['auth'=>false, 'url'=>$this->xero->getAuthorizeURL($oauth_response['oauth_token'])]);
+
+
+        }else{
+
+            //set auth session
+            $oauth_session = Session::get('oauth');
+
+            if($oauth_session) {
+                $this->xero->getOAuthClient()
+                    ->setToken($oauth_session['token'])
+                    ->setTokenSecret($oauth_session['token_secret']);
+            }
+
+            return ['error'=>true, 'message'=>"<h3> You are already connected to Xero APi </h3>"];
+
+            exit;
+        }
 
 
 
