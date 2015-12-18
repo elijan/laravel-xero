@@ -9,7 +9,7 @@
     ],
     "require": {
         "php": ">=5.4.0",
-        "calcinai/xero-php": "dev-master"
+        "elijan/xero-php": "dev-master"
     },
     "repositories": [
         {
