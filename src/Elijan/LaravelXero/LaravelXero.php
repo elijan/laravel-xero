@@ -192,7 +192,7 @@ class LaravelXero {
         $this->invoice->setType(\XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCPAY);
 
         $this->invoice->setContact($contact);
-        $this->invoice->setReference($reference_id);
+        $this->invoice->setInvoiceNumber($reference_id);
     }
 
 
@@ -311,16 +311,21 @@ class LaravelXero {
 
         $item = $invoice->item;
         $unit_cost  = $invoice->price;
-        $commission =  $item->xero_percentage/100;
+
+        $this->log->addInfo("Current Unit Cost $  $unit_cost ");
 
         if( $this->invoice->getType()== \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCPAY){
 
-            $unit_cost =   ($unit_cost-  (($unit_cost * $commission)/100))/100;
+            $commission =  $unit_cost * $invoice->provider->xero_percentage/10000;
 
-            $this->log->addInfo("Adding Unit Cost $unit_cost ");
+            $unit_cost =   ($unit_cost- $commission );
+
+            $this->log->addInfo("Comission $ $commission ");
 
         }
 
+        $this->log->addInfo("Adding Unit Cost $  $unit_cost ");
+        echo $unit_cost;
         return $unit_cost;
     }
 
