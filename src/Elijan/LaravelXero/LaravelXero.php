@@ -7,6 +7,7 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use \XeroPHP\Remote\URL;
 use \XeroPHP\Remote\Request;
+use \Illuminate\Support\Facades\Auth as Auth;
 
 class LaravelXero {
 
@@ -96,7 +97,7 @@ class LaravelXero {
 
         if(\Auth::account()->xero_guid==null){
 
-            return ['error'=>true, 'message'=>" You don't have NDIA account setup. Please click <a href='/settings'> Edit Account </a> to add NDIA settings"];
+            return ['error'=>true, 'message'=>" You don't have NDIA account setup. Please click <a href='". route('settings.index')."'> Edit Account </a> to add NDIA settings"];
 
         }
 
