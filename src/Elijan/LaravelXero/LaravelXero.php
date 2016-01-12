@@ -95,11 +95,6 @@ class LaravelXero {
 
         //check if auth user xero_gui exist
 
-        if(\Auth::account()->xero_guid==null){
-
-            return ['error'=>true, 'message'=>" You don't have NDIA account setup. Please click <a href='". route('settings.index')."'> Edit Account </a> to add NDIA settings"];
-
-        }
 
         if(null === $oauth_session = $this->getOAuthSession() ){
 
@@ -158,7 +153,10 @@ class LaravelXero {
         $contact = $this->validateInvoice($account, \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC);
         if($contact == false){
 
-            $contact =  $this->createAccount($account);
+            if(!$contact = $this->createAccount($account)) {
+
+                return false;
+            }
 
         }
 
@@ -183,7 +181,11 @@ class LaravelXero {
         if($contact == false){
             //create an account
 
-            $contact = $this->createAccount($account);
+            if(!$contact = $this->createAccount($account)) {
+
+
+                return false;
+            }
 
         }
 
@@ -258,6 +260,10 @@ class LaravelXero {
      */
     public function createAccount(\Dealsealer\Api\Accounts $account){
 
+
+         try {
+            $this->log->addInfo("Creating Account...", [$account->id]);
+
             $contact = new \XeroPHP\Models\Accounting\Contact();
             $contact->setName($account->business_name);
             $contact->setEmailAddress($account->user->email);
@@ -265,13 +271,24 @@ class LaravelXero {
             $contact->setLastName($account->last_name);
             $response = $this->xero->save($contact);
 
+            $this->log->addInfo("Creating Account...response", ($response));
             $response = $response->getElements()[0];
+
+
 
             $account->xero_guid = $response['ContactID'];
             $account->save();
 
             return $contact;
 
+         }catch(\XeroPHP\Remote\Exception\BadRequestException $e){
+
+             $this->log->addError("Error creating account...", [$e->getMessage()]);
+
+
+
+         }
+        return false;
 
     }
 
@@ -326,7 +343,6 @@ class LaravelXero {
         }
 
         $this->log->addInfo("Adding Unit Cost $  $unit_cost ");
-        echo $unit_cost;
         return $unit_cost;
     }
 
@@ -340,30 +356,33 @@ class LaravelXero {
 
         if($type == \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC && $account->user->type !== \Dealsealer\Api\User::PM_MANAGER){
 
-            $this->log->addInfo("User not a Plan Manager....".serialize($account));
+            $this->log->addInfo("User not a Plan Manager....", ($account->toArray()));
             throw new \Exception("User not a Plan Manager");
         }
 
         if($type == \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCPAY && $account->user->type !== \Dealsealer\Api\User::PROVIDER){
 
-            $this->log->addInfo("User not a Provider....".serialize($account));
+            $this->log->addInfo("User not a Provider....", ($account->toArray()));
             throw new \Exception("User is not a Provider");
         }
 
 
         if($account->xero_guid){
 
-            $this->log->addInfo("try to get the account".serialize($account));
+            $this->log->addInfo("try to get the account by GUID if any....", ($account->toArray()));
             try {
-                return $this->xero->loadByGUID('Accounting\Contact', $account->xero_guid);
+                $contact =  $this->xero->loadByGUID('Accounting\Contact', $account->xero_guid);
 
             }catch(\XeroPHP\Remote\Exception\NotFoundException $e){
 
+                $this->log->addInfo("Account Not found...",  [$account->full_name]);
+                return false;
             }
         }
 
-        $this->log->addInfo("User des not exist".serialize($account));
-        return false;
+        return $contact;
+
+
     }
 
 }
