@@ -148,7 +148,7 @@ class LaravelXero {
      */
     public function createInvoiceAccRec(\Dealsealer\Api\Accounts $account, $reference_id){
 
-        $this->log->addInfo("Create Invoice Rec....");
+        $this->log->addInfo("Create Invoice Receivable....");
 
         $contact = $this->validateInvoice($account, \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC);
         if($contact == false){
@@ -210,9 +210,6 @@ class LaravelXero {
             throw new \Exception('Invoice Not created');
         }
 
-
-
-
         $xero_item = $this->validateItem($item);
 
 
@@ -226,7 +223,7 @@ class LaravelXero {
 
 
             $sales = new \XeroPHP\Models\Accounting\Item\Sale();
-            $sales->setUnitPrice($this->getUnitAmount($invoice));
+            $sales->setUnitPrice($this->getUnitAmount($invoice, $invoice->plan_manager));
             $sales->setAccountCode('200');
 
             $xero_item->addSalesDetail($sales);
@@ -246,7 +243,7 @@ class LaravelXero {
         $line_item->setAccountCode('200');
         $line_item->setQuantity($invoice->quantity/100);
 
-        $line_item->setUnitAmount($this->getUnitAmount($invoice));
+        $line_item->setUnitAmount($this->getUnitAmount($invoice, $invoice->plan_manager));
 
         $this->invoice->addLineItem($line_item);
         $date = new \DateTime(date('Y-m-d', strtotime('+30 days')));
@@ -276,8 +273,8 @@ class LaravelXero {
 
 
 
-            $account->xero_guid = $response['ContactID'];
-            $account->save();
+            $account->xero->xero_guid = $response['ContactID'];
+            $account->xero->save();
 
             return $contact;
 
@@ -325,7 +322,7 @@ class LaravelXero {
     /**
      * @param \Dealsealer\Api\BundleItems $item
      */
-    private function getUnitAmount(\Dealsealer\Api\BundleInvoices $invoice){
+    private function getUnitAmount(\Dealsealer\Api\BundleInvoices $invoice, \Dealsealer\Api\Accounts $account){
 
         $item = $invoice->item;
         $unit_cost  = $invoice->price;
@@ -334,7 +331,7 @@ class LaravelXero {
 
         if( $this->invoice->getType()== \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCPAY){
 
-            $commission =  $unit_cost * $invoice->provider->xero_percentage/10000;
+            $commission =  $unit_cost * $account->xero->xero_percentage/10000;
 
             $unit_cost =   ($unit_cost- $commission );
 
@@ -367,11 +364,11 @@ class LaravelXero {
         }
 
 
-        if($account->xero_guid){
+        if($account->xero->xero_guid){
 
             $this->log->addInfo("try to get the account by GUID if any....", ($account->toArray()));
             try {
-                $contact =  $this->xero->loadByGUID('Accounting\Contact', $account->xero_guid);
+                $contact =  $this->xero->loadByGUID('Accounting\Contact', $account->xero->xero_guid);
 
             }catch(\XeroPHP\Remote\Exception\NotFoundException $e){
 
