@@ -268,7 +268,7 @@ class LaravelXero {
             $contact->setLastName($account->last_name);
             $response = $this->xero->save($contact);
 
-            $this->log->addInfo("Creating Account...response", ($response));
+            $this->log->addInfo("Creating Account...response", serialize($response));
             $response = $response->getElements()[0];
 
 
