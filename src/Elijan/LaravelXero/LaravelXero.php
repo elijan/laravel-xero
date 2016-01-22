@@ -143,10 +143,10 @@ class LaravelXero {
 
 
     /**
-     * @param \Dealsealer\Api\Accounts $plan_manager
+     * @param \MePlus\Models\Accounts $plan_manager
      * @param $reference_id
      */
-    public function createInvoiceAccRec(\Dealsealer\Api\Accounts $account, $reference_id){
+    public function createInvoiceAccRec(\MePlus\Models\Accounts $account, $reference_id){
 
         $this->log->addInfo("Create Invoice Receivable....");
 
@@ -169,10 +169,10 @@ class LaravelXero {
 
 
     /**
-     * @param \Dealsealer\Api\Accounts $plan_manager
+     * @param \MePlus\Models\Accounts $plan_manager
      * @param $reference_id\
      */
-    public function createInvoiceAccPay(\Dealsealer\Api\Accounts $account, $reference_id){
+    public function createInvoiceAccPay(\MePlus\Models\Accounts $account, $reference_id){
 
         $this->log->addInfo("Create Invoice Pay....");
 
@@ -200,7 +200,7 @@ class LaravelXero {
 
 
 
-    public  function addItemToInvoice(\Dealsealer\Api\BundleInvoices $invoice){
+    public  function addItemToInvoice(\MePlus\Models\BundleInvoices $invoice){
 
 
         $item = $invoice->item;
@@ -252,10 +252,10 @@ class LaravelXero {
     }
 
     /**
-     * @param \Dealsealer\Api\Accounts $account
+     * @param \MePlus\Models\Accounts $account
      *
      */
-    public function createAccount(\Dealsealer\Api\Accounts $account){
+    public function createAccount(\MePlus\Models\Accounts $account){
 
 
          try {
@@ -303,7 +303,7 @@ class LaravelXero {
     }
 
 
-    private function validateItem(\Dealsealer\Api\BundleItems $item){
+    private function validateItem(\MePlus\Models\BundleItems $item){
 
         try {
 
@@ -320,9 +320,9 @@ class LaravelXero {
     }
 
     /**
-     * @param \Dealsealer\Api\BundleItems $item
+     * @param \MePlus\Models\BundleItems $item
      */
-    private function getUnitAmount(\Dealsealer\Api\BundleInvoices $invoice, \Dealsealer\Api\Accounts $account){
+    private function getUnitAmount(\MePlus\Models\BundleInvoices $invoice, \MePlus\Models\Accounts $account){
 
         $item = $invoice->item;
         $unit_cost  = $invoice->price;
@@ -344,20 +344,20 @@ class LaravelXero {
     }
 
     /**
-     * @param \Dealsealer\Api\Accounts $plan_manager
+     * @param \MePlus\Models\Accounts $plan_manager
      * @param $type
      * @return mixed
      */
-    private function validateInvoice(\Dealsealer\Api\Accounts $account, $type){
+    private function validateInvoice(\MePlus\Models\Accounts $account, $type){
 
 
-        if($type == \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC && $account->user->type !== \Dealsealer\Api\User::PM_MANAGER){
+        if($type == \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC && $account->user->type !== \MePlus\Models\User::PM_MANAGER){
 
             $this->log->addInfo("User not a Plan Manager....", ($account->toArray()));
             throw new \Exception("User not a Plan Manager");
         }
 
-        if($type == \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCPAY && $account->user->type !== \Dealsealer\Api\User::PROVIDER){
+        if($type == \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCPAY && $account->user->type !== \MePlus\Models\User::PROVIDER){
 
             $this->log->addInfo("User not a Provider....", ($account->toArray()));
             throw new \Exception("User is not a Provider");
