@@ -21,7 +21,7 @@ class LaravelXero {
     private $log;
 
     public function __construct(Repository $config){
-        $this->log =  new Logger('paypal-adaptive');
+        $this->log =  new Logger('xero-log');
         $this->log->pushHandler(new StreamHandler(storage_path('logs').'/xero-service.log', Logger::INFO));
 
 
@@ -105,13 +105,13 @@ class LaravelXero {
             try {
                 $request->send();
             } catch (\Exception $e){
-                print_r($e);
-                if ($request->getResponse()) {
-                    print_r($request->getResponse()->getOAuthResponse());
-                }
+
+                return ['error'=>true, 'message'=>$e->getMessage()];
+
             }
 
             $oauth_response = $request->getResponse()->getOAuthResponse();
+
 
             $this->setOAuthSession($oauth_response['oauth_token'], $oauth_response['oauth_token_secret']);
 
@@ -131,7 +131,7 @@ class LaravelXero {
                     ->setTokenSecret($oauth_session['token_secret']);
             }
 
-            return ['error'=>true, 'message'=>"<h3> You are already connected to Xero APi </h3>"];
+            return ['error'=>false, 'message'=>"<h3> You are already connected to Xero APi </h3>"];
 
             exit;
         }
@@ -199,8 +199,28 @@ class LaravelXero {
     }
 
 
+    public function getContacts($guid=null){
 
-    public  function addItemToInvoice(\MePlus\Models\BundleInvoices $invoice){
+
+        try {
+            if($guid===null) {
+                return $this->xero->load('\\XeroPHP\\Models\\Accounting\\Contact')->execute();
+            }else{
+                return  $this->xero->loadByGUID('Accounting\Contact',$guid);
+
+            }
+
+        }catch(\XeroPHP\Remote\Exception\NotFoundException $e){
+
+            $this->log->addInfo("Contact Not found...$guid");
+            return false;
+        }
+
+
+
+    }
+
+    public  function addItemToInvoice(\MePlus\Models\Invoices $invoice){
 
 
         $item = $invoice->item;
@@ -322,7 +342,7 @@ class LaravelXero {
     /**
      * @param \MePlus\Models\BundleItems $item
      */
-    private function getUnitAmount(\MePlus\Models\BundleInvoices $invoice, \MePlus\Models\Accounts $account){
+    private function getUnitAmount(\MePlus\Models\Invoices $invoice, \MePlus\Models\Accounts $account){
 
         $item = $invoice->item;
         $unit_cost  = $invoice->price;
@@ -380,6 +400,12 @@ class LaravelXero {
         return $contact;
 
 
+    }
+
+
+    public function log($message, array $data=[]){
+
+        $this->log->addInfo($message,$data);
     }
 
 }
