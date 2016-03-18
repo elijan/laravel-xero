@@ -145,32 +145,35 @@ class LaravelXero {
     /**
      * @param \MePlus\Models\Accounts $plan_manager
      * @param $reference_id
+     *
+     * goes to NDIA
      */
-    public function createInvoiceAccRec(\MePlus\Models\Accounts $account, $reference_id){
+    public function createInvoiceAccRec(\MePlus\Models\PlanManager $planManager, $reference_id){
 
         $this->log->addInfo("Create Invoice Receivable....");
 
-        $contact = $this->validateInvoice($account, \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC);
-        if($contact == false){
 
-            if(!$contact = $this->createAccount($account)) {
+        $contact = $this->validateContact($planManager, \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC);
 
-                return false;
-            }
+        $contact = $this->xero->loadByGUID('Accounting\Contact',$planManager->xero_account_number);
 
-        }
+
 
         $this->invoice  =   new \XeroPHP\Models\Accounting\Invoice();
         $this->invoice->setStatus('AUTHORISED');
         $this->invoice->setType(\XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC);
         $this->invoice->setContact($contact);
         $this->invoice->setReference($reference_id);
+
+        $this->log->addInfo("Invoice Set.......");
     }
 
 
     /**
      * @param \MePlus\Models\Accounts $plan_manager
      * @param $reference_id\
+     *
+     * Oyabale invice withotu meplus feee
      */
     public function createInvoiceAccPay(\MePlus\Models\Accounts $account, $reference_id){
 
@@ -220,54 +223,50 @@ class LaravelXero {
 
     }
 
-    public  function addItemToInvoice(\MePlus\Models\Invoices $invoice){
+    public  function addItemToInvoice(\MePlus\Models\InvoiceLineItems $item, $account_code){
 
 
-        $item = $invoice->item;
 
         if( !$this->invoice instanceof \XeroPHP\Models\Accounting\Invoice){
 
             throw new \Exception('Invoice Not created');
         }
 
-        $xero_item = $this->validateItem($item);
 
 
-        if($xero_item === false) {
 
-            $xero_item = new \XeroPHP\Models\Accounting\Item();
+     /*   $xero_item = new \XeroPHP\Models\Accounting\Item();
 
-            $xero_item->setCode($item->xero_code);
-            $xero_item->setName($item->item->name);
-            $xero_item->setIsTrackedAsInventory(false);
+        $xero_item->setCode($item->item_code);
+        $xero_item->setName($item->item->item->name);
+        $xero_item->setIsTrackedAsInventory(false);*/
 
+       /* $sales = new \XeroPHP\Models\Accounting\Item\Sale();
+        $sales->setUnitPrice($item->price);
+        $sales->setAccountCode('200');
 
-            $sales = new \XeroPHP\Models\Accounting\Item\Sale();
-            $sales->setUnitPrice($this->getUnitAmount($invoice, $invoice->plan_manager));
-            $sales->setAccountCode('200');
+        $xero_item->addSalesDetail($sales);
 
-            $xero_item->addSalesDetail($sales);
+        $response = $this->xero->save($xero_item);
+        $response = $response->getElements()[0];*/
 
-            $response = $this->xero->save($xero_item);
-            $response = $response->getElements()[0];
+       /* $item->xero_guid = $response['ItemID'];
+        $item->save();*/
 
-
-            $item->xero_guid = $response['ItemID'];
-            $item->save();
-        }
-
+        $this->log->addInfo("Add Invoice item....");
 
         $line_item =  new \XeroPHP\Models\Accounting\Invoice\LineItem();
-        $line_item->setItemCode($item->xero_code);
-        $line_item->setDescription($item->item->name);
-        $line_item->setAccountCode('200');
-        $line_item->setQuantity($invoice->quantity/100);
+        $line_item->setItemCode($item->item_code);
+        $line_item->setDescription($item->item->item->name);
+        $line_item->setAccountCode($account_code);
+        $line_item->setQuantity($item->quantity);
 
-        $line_item->setUnitAmount($this->getUnitAmount($invoice, $invoice->plan_manager));
+        $line_item->setUnitAmount($item->price);
 
         $this->invoice->addLineItem($line_item);
-        $date = new \DateTime(date('Y-m-d', strtotime('+30 days')));
-        $this->invoice->setDueDate($date);
+
+        $this->log->addInfo("added....");
+
 
     }
 
@@ -275,26 +274,21 @@ class LaravelXero {
      * @param \MePlus\Models\Accounts $account
      *
      */
-    public function createAccount(\MePlus\Models\Accounts $account){
+    public function createContact(\MePlus\Models\Company $company){
 
 
          try {
-            $this->log->addInfo("Creating Account...", [$account->id]);
+            $this->log->addInfo("Creating Contact...", [$company->name]);
 
             $contact = new \XeroPHP\Models\Accounting\Contact();
-            $contact->setName($account->business_name);
-            $contact->setEmailAddress($account->user->email);
-            $contact->setFirstName($account->first_name);
-            $contact->setLastName($account->last_name);
+            $contact->setName($company->name);
+            $contact->setEmailAddress($company->email);
+           /* $contact->setFirstName($account->first_name);
+            $contact->setLastName($account->last_name);*/
             $response = $this->xero->save($contact);
 
-            $this->log->addInfo("Creating Account...response", serialize($response));
-            $response = $response->getElements()[0];
+            $this->log->addInfo("Creating Contact...");
 
-
-
-            $account->xero->xero_guid = $response['ContactID'];
-            $account->xero->save();
 
             return $contact;
 
@@ -315,7 +309,10 @@ class LaravelXero {
      */
     public function saveInvoice(){
 
-        $this->log->addInfo("Svaing Ivoice". serialize($this->invoice));
+        $this->log->addInfo("Saving Invoice". serialize($this->invoice));
+
+        $date = new \DateTime(date('Y-m-d', strtotime('+30 days')));
+        $this->invoice->setDueDate($date);
 
         $result = $this->xero->save($this->invoice);
 
@@ -368,33 +365,19 @@ class LaravelXero {
      * @param $type
      * @return mixed
      */
-    private function validateInvoice(\MePlus\Models\Accounts $account, $type){
+    private function validateContact($contact, $type){
 
 
-        if($type == \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC && $account->user->type !== \MePlus\Models\User::PM_MANAGER){
+        if($type == \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC && $contact->type !== \MePlus\Models\User::PM_MANAGER){
 
-            $this->log->addInfo("User not a Plan Manager....", ($account->toArray()));
+            $this->log->addInfo("User not a Plan Manager....", ($contact->toArray()));
             throw new \Exception("User not a Plan Manager");
         }
 
-        if($type == \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCPAY && $account->user->type !== \MePlus\Models\User::PROVIDER){
+        if($type == \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCPAY && $contact->type !== \MePlus\Models\User::PROVIDER){
 
-            $this->log->addInfo("User not a Provider....", ($account->toArray()));
+            $this->log->addInfo("User not a Provider....", ($contact->toArray()));
             throw new \Exception("User is not a Provider");
-        }
-
-
-        if($account->xero->xero_guid){
-
-            $this->log->addInfo("try to get the account by GUID if any....", ($account->toArray()));
-            try {
-                $contact =  $this->xero->loadByGUID('Accounting\Contact', $account->xero->xero_guid);
-
-            }catch(\XeroPHP\Remote\Exception\NotFoundException $e){
-
-                $this->log->addInfo("Account Not found...",  [$account->full_name]);
-                return false;
-            }
         }
 
         return $contact;
