@@ -153,9 +153,9 @@ class LaravelXero {
         $this->log->addInfo("Create Invoice Receivable....");
 
 
-        $contact = $this->validateContact($planManager, \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC);
+       $contact = $this->validateContact($planManager, \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC);
 
-        $contact = $this->xero->loadByGUID('Accounting\Contact',$planManager->xero_account_number);
+        $contact = $this->xero->loadByGUID('Accounting\Contact',$planManager->xero->xero_guid);
 
 
 
@@ -175,28 +175,18 @@ class LaravelXero {
      *
      * Oyabale invice withotu meplus feee
      */
-    public function createInvoiceAccPay(\MePlus\Models\Accounts $account, $reference_id){
+    public function createInvoiceAccPay(\MePlus\Models\PlanManagerXeroCompanyAccount $company, $reference_id){
 
         $this->log->addInfo("Create Invoice Pay....");
 
-        $contact = $this->validateInvoice($account, \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCPAY);
-
-        if($contact == false){
-            //create an account
-
-            if(!$contact = $this->createAccount($account)) {
 
 
-                return false;
-            }
-
-        }
+        $contact = $this->xero->loadByGUID('Accounting\Contact',$company->xero_guid);
 
 
         $this->invoice  =   new \XeroPHP\Models\Accounting\Invoice();
         $this->invoice->setStatus(\XeroPHP\Models\Accounting\Invoice::INVOICE_STATUS_AUTHORISED);
         $this->invoice->setType(\XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCPAY);
-
         $this->invoice->setContact($contact);
         $this->invoice->setInvoiceNumber($reference_id);
     }
@@ -260,7 +250,7 @@ class LaravelXero {
         $line_item->setDescription($item->item->item->name);
         $line_item->setAccountCode($account_code);
         $line_item->setQuantity($item->quantity);
-
+        $line_item->setTaxType('NONE');
         $line_item->setUnitAmount($item->price);
 
         $this->invoice->addLineItem($line_item);
