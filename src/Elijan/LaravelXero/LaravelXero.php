@@ -287,7 +287,7 @@ class LaravelXero {
 
          }catch(\XeroPHP\Remote\Exception\BadRequestException $e){
 
-             $this->log->addError("Error creating account...", [$e->getMessage()]);
+             $this->log->addInfo("Error creating account...", [$e->getMessage()]);
 
 
 
