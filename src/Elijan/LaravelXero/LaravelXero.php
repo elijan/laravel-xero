@@ -276,6 +276,9 @@ class LaravelXero {
            /* $contact->setFirstName($account->first_name);
             $contact->setLastName($account->last_name);*/
             $response = $this->xero->save($contact);
+            $response = $response->getElements()[0];
+
+            $contact->setGUID($response['ContactID']);
 
             $this->log->addInfo("Creating Contact...");
 
