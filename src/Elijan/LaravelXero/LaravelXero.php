@@ -251,7 +251,7 @@ class LaravelXero {
         $line_item->setAccountCode($account_code);
         $line_item->setQuantity($item->quantity);
         $line_item->setTaxType('NONE');
-        $line_item->setUnitAmount($item->price);
+        $line_item->setUnitAmount($item->unformatted_price);
 
         $this->invoice->addLineItem($line_item);
 
