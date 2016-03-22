@@ -160,7 +160,7 @@ class LaravelXero {
 
 
         $this->invoice  =   new \XeroPHP\Models\Accounting\Invoice();
-        $this->invoice->setStatus('AUTHORISED');
+        $this->invoice->setStatus(\XeroPHP\Models\Accounting\Invoice::INVOICE_STATUS_DRAFT);
         $this->invoice->setType(\XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC);
         $this->invoice->setContact($contact);
         $this->invoice->setReference($reference_id);
@@ -185,7 +185,7 @@ class LaravelXero {
 
 
         $this->invoice  =   new \XeroPHP\Models\Accounting\Invoice();
-        $this->invoice->setStatus(\XeroPHP\Models\Accounting\Invoice::INVOICE_STATUS_AUTHORISED);
+        $this->invoice->setStatus(\XeroPHP\Models\Accounting\Invoice::INVOICE_STATUS_DRAFT);
         $this->invoice->setType(\XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCPAY);
         $this->invoice->setContact($contact);
         $this->invoice->setInvoiceNumber($reference_id);
@@ -250,7 +250,7 @@ class LaravelXero {
         $line_item->setDescription($item->item->item->name);
         $line_item->setAccountCode($account_code);
         $line_item->setQuantity($item->quantity);
-        $line_item->setTaxType('NONE');
+        $line_item->setTaxType(\XeroPHP\Models\Accounting\ReportTaxType::AUSTRALIUM_BASEXCLUDED);
         $line_item->setUnitAmount($item->unformatted_price);
 
         $this->invoice->addLineItem($line_item);
