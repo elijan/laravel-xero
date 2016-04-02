@@ -22,7 +22,7 @@ class LaravelXero {
 
     public function __construct(Repository $config){
         $this->log =  new Logger('xero-log');
-        $this->log->pushHandler(new StreamHandler(storage_path('logs').'/xero-service.log', Logger::INFO));
+        $this->log->pushHandler(new StreamHandler(storage_path('logs').'/xero-service'.date('y-m-d').'log', Logger::INFO));
 
 
         $this->config  = $config->get("laravel-xero::config");
