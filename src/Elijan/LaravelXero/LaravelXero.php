@@ -23,9 +23,9 @@ class LaravelXero {
     public function __construct(Repository $config){
         $file_name = storage_path('logs').'/xero-service-'.date('y-m-d').'log';
         $this->log =  new Logger('xero-log');
-        $this->log->pushHandler(new StreamHandler($file_name, Logger::INFO));
+        $this->log->pushHandler(new StreamHandler($file_name, Logger::INFO, true, 0777));
 
-        chmod($file_name,0777);
+
 
         $this->config  = $config->get("laravel-xero::config");
 
