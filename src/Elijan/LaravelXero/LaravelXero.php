@@ -239,7 +239,7 @@ class LaravelXero {
 
 
 
-        if($item->subtotal != (number_format($item->quantity, 4) * number_format($item->price,4))){
+        if($item->subtotal != number_format((number_format($item->quantity, 4) * number_format($item->price,4)),4)){
             //add only one item
             $line_item->setQuantity(1);
             $line_item->setUnitAmount($item->subtotal);
