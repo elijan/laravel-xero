@@ -21,7 +21,7 @@ class LaravelXero {
     private $log;
 
     public function __construct(Repository $config){
-        $file_name = storage_path('logs').'/xero-service-'.date('y-m-d').'log';
+        $file_name = storage_path('logs').'/xero-service-'.date('y-m-d').'.log';
         $this->log =  new Logger('xero-log');
         $this->log->pushHandler(new StreamHandler($file_name, Logger::INFO, true, 0777));
 
@@ -238,9 +238,14 @@ class LaravelXero {
         $line_item->setUnitAmount(number_format($item->price,4));
 
 
+        $this->log->addInfo("Qty....".$item->quantity);
+        $this->log->addInfo("price....".$item->price);
+        $this->log->addInfo("Sum....".number_format($item->quantity * $item->price,4));
+        $this->log->addInfo("Sub total..".$item->subtotal);
 
-        if($item->subtotal != number_format((number_format($item->quantity, 4) * number_format($item->price,4)),4)){
-            //add only one item
+
+        if($item->subtotal != (number_format($item->quantity * $item->price,4))){
+            $this->log->addInfo("Not equal adding as one...");
             $line_item->setQuantity(1);
             $line_item->setUnitAmount($item->subtotal);
         }
