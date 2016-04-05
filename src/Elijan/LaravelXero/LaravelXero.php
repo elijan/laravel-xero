@@ -150,12 +150,13 @@ class LaravelXero {
      */
     public function createInvoiceAccRec(\MePlus\Models\PlanManager $planManager, $reference_id){
 
-        $this->log->addInfo("Create Invoice Receivable....");
+
+        $this->log->addInfo("Create Invoice Receivable....".$planManager->company->admin->xero->xero_guid);
 
 
        $contact = $this->validateContact($planManager, \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC);
 
-        $contact = $this->xero->loadByGUID('Accounting\Contact',$planManager->xero->xero_guid);
+        $contact = $this->xero->loadByGUID('Accounting\Contact',$planManager->company->admin->xero->xero_guid);
 
 
 
@@ -223,35 +224,25 @@ class LaravelXero {
         }
 
 
-
-
-     /*   $xero_item = new \XeroPHP\Models\Accounting\Item();
-
-        $xero_item->setCode($item->item_code);
-        $xero_item->setName($item->item->item->name);
-        $xero_item->setIsTrackedAsInventory(false);*/
-
-       /* $sales = new \XeroPHP\Models\Accounting\Item\Sale();
-        $sales->setUnitPrice($item->price);
-        $sales->setAccountCode('200');
-
-        $xero_item->addSalesDetail($sales);
-
-        $response = $this->xero->save($xero_item);
-        $response = $response->getElements()[0];*/
-
-       /* $item->xero_guid = $response['ItemID'];
-        $item->save();*/
-
         $this->log->addInfo("Add Invoice item....");
+
 
         $line_item =  new \XeroPHP\Models\Accounting\Invoice\LineItem();
         $line_item->setItemCode($item->item_code);
         $line_item->setDescription($item->item->item->name);
         $line_item->setAccountCode($account_code);
-        $line_item->setQuantity($item->quantity);
+        $line_item->setQuantity(number_format($item->quantity, 4));
         $line_item->setTaxType(\XeroPHP\Models\Accounting\ReportTaxType::AUSTRALIUM_BASEXCLUDED);
-        $line_item->setUnitAmount($item->unformatted_price);
+        $line_item->setUnitAmount(number_format($item->price,4));
+
+
+
+        if($item->subtotal != (number_format($item->quantity, 4) * number_format($item->price,4))){
+            //add only one item
+            $line_item->setQuantity(1);
+            $line_item->setUnitAmount($item->subtotal);
+        }
+
 
         $this->invoice->addLineItem($line_item);
 
