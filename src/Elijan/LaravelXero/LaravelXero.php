@@ -5,6 +5,7 @@ use Illuminate\Config\Repository;
 use Illuminate\Support\Facades\Session;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
+use XeroPHP\Models\Accounting\Account;
 use \XeroPHP\Remote\URL;
 use \XeroPHP\Remote\Request;
 use \Illuminate\Support\Facades\Auth as Auth;
@@ -155,9 +156,6 @@ class LaravelXero {
 
         $this->log->addInfo("Create Invoice Receivable....".$planManager->company->admin->xero->xero_guid);
 
-
-       $contact = $this->validateContact($planManager, \XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC);
-
         $contact = $this->xero->loadByGUID('Accounting\Contact',$planManager->company->admin->xero->xero_guid);
 
 
@@ -178,13 +176,13 @@ class LaravelXero {
      *
      * Oyabale invice withotu meplus feee
      */
-    public function createInvoiceAccPay(\MePlus\Models\PlanManagerXeroCompanyAccount $company, $reference_id){
+    public function createInvoiceAccPay( $account, $reference_id, $url){
 
-        $this->log->addInfo("Create Invoice Pay....");
+        $this->log->addInfo("Create Invoice Payabale..".$account->id."....".get_class($account));
 
 
 
-        $contact = $this->xero->loadByGUID('Accounting\Contact',$company->xero_guid);
+        $contact = $this->xero->loadByGUID('Accounting\Contact',$account->xero_guid);
 
 
         $this->invoice  =   new \XeroPHP\Models\Accounting\Invoice();
@@ -192,6 +190,8 @@ class LaravelXero {
         $this->invoice->setType(\XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCPAY);
         $this->invoice->setContact($contact);
         $this->invoice->setInvoiceNumber($reference_id);
+
+        $this->invoice->setUrl($url);
     }
 
 
@@ -212,7 +212,24 @@ class LaravelXero {
             return false;
         }
 
+    }
 
+    public function getLiability($guid=null){
+
+
+        try {
+            if($guid===null) {
+                return $this->xero->load('\\XeroPHP\\Models\\Accounting\\Account')->where('Class', \XeroPHP\Models\Accounting\Account::ACCOUNT_CLASS_TYPE_LIABILITY)->execute();
+            }else{
+                return  $this->xero->loadByGUID('Accounting\Account',$guid);
+
+            }
+
+        }catch(\XeroPHP\Remote\Exception\NotFoundException $e){
+
+            $this->log->addInfo("Account Not found...$guid");
+            return false;
+        }
 
     }
 
@@ -258,15 +275,81 @@ class LaravelXero {
 
     }
 
+
+    public function createLiabilityAccount(\MePlus\Models\Clients $client){
+
+        try {
+            $this->log->addInfo("Creating Liability Account...", [$client->full_name]);
+
+            $account = new \XeroPHP\Models\Accounting\Account();
+            $account->setName($client->ndis_number);
+            $account->setType(\XeroPHP\Models\Accounting\Account::ACCOUNT_TYPE_LIABILITY);
+            $account->setCode($client->ndis_number);
+
+            $response = $this->xero->save($account);
+            $response = $response->getElements()[0];
+
+            $account->setGUID($response['AccountID']);
+
+            $this->log->addInfo("Creating Liability Account...");
+
+
+            return $account;
+
+        }catch(\XeroPHP\Remote\Exception\BadRequestException $e){
+
+            $this->log->addInfo("Error Creating Liability Account....", [$e->getMessage()]);
+
+
+
+        }
+        return false;
+
+
+
+
+    }
     /**
-     * @param \MePlus\Models\Accounts $account
-     *
+     * @param \MePlus\Models\Clients $client
+     * @return bool|\XeroPHP\Models\Accounting\Contact
+     * @throws \XeroPHP\Exception
      */
-    public function createContact(\MePlus\Models\Company $company){
+    public function createClientContact(\MePlus\Models\Clients $client){
+
+        try {
+            $this->log->addInfo("Creating Client Contact...", [$client->full_name]);
+
+            $contact = new \XeroPHP\Models\Accounting\Contact();
+            $contact->setName($client->full_name);
+           // $contact->setEmailAddress($company->email);
+            /* $contact->setFirstName($account->first_name);
+             $contact->setLastName($account->last_name);*/
+            $response = $this->xero->save($contact);
+            $response = $response->getElements()[0];
+
+            $contact->setGUID($response['ContactID']);
+
+            $this->log->addInfo("Creating Client Contact...");
+
+
+            return $contact;
+
+        }catch(\XeroPHP\Remote\Exception\BadRequestException $e){
+
+            $this->log->addInfo("Error creating Client Contact...", [$e->getMessage()]);
+
+
+
+        }
+        return false;
+
+    }
+
+    public function createCompanyContact(\MePlus\Models\Company $company){
 
 
          try {
-            $this->log->addInfo("Creating Contact...", [$company->name]);
+            $this->log->addInfo("Creating Company Contact...", [$company->name]);
 
             $contact = new \XeroPHP\Models\Accounting\Contact();
             $contact->setName($company->name);
@@ -278,14 +361,14 @@ class LaravelXero {
 
             $contact->setGUID($response['ContactID']);
 
-            $this->log->addInfo("Creating Contact...");
+            $this->log->addInfo("Creating Company Contact...");
 
 
             return $contact;
 
          }catch(\XeroPHP\Remote\Exception\BadRequestException $e){
 
-             $this->log->addInfo("Error creating account...", [$e->getMessage()]);
+             $this->log->addInfo("Error creating Company Contact...", [$e->getMessage()]);
 
 
 
