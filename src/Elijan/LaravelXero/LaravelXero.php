@@ -282,7 +282,7 @@ class LaravelXero {
             $this->log->addInfo("Creating Liability Account...", [$client->full_name]);
 
             $account = new \XeroPHP\Models\Accounting\Account();
-            $account->setName($client->ndis_number);
+            $account->setName("Client - ".$client->full_name);
             $account->setType(\XeroPHP\Models\Accounting\Account::ACCOUNT_TYPE_LIABILITY);
             $account->setCode($client->ndis_number);
 
