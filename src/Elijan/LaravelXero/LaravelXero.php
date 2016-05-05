@@ -1,5 +1,6 @@
 <?php namespace Elijan\LaravelXero;
 
+use Aws\CloudFront\Exception\Exception;
 use GuzzleHttp\Subscriber\Redirect;
 use Illuminate\Config\Repository;
 use Illuminate\Support\Facades\Session;
@@ -300,6 +301,7 @@ class LaravelXero {
 
             $this->log->addInfo("Error Creating Liability Account....", [$e->getMessage()]);
 
+            throw new Exception("Error Creating Liability Account....".$e->getMessage());
 
 
         }
@@ -338,6 +340,7 @@ class LaravelXero {
 
             $this->log->addInfo("Error creating Client Contact...", [$e->getMessage()]);
 
+            throw new Exception("Error Creating Client Contact....".$e->getMessage());
 
 
         }
@@ -370,6 +373,7 @@ class LaravelXero {
 
              $this->log->addInfo("Error creating Company Contact...", [$e->getMessage()]);
 
+             throw new Exception("Error Creating Company Contact....".$e->getMessage());
 
 
          }
