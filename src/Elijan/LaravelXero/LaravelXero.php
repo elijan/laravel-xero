@@ -152,7 +152,7 @@ class LaravelXero {
      *
      * goes to NDIA
      */
-    public function createInvoiceAccRec(\MePlus\Models\PlanManager $planManager, $reference_id){
+    public function createInvoiceAccRec(\MePlus\Models\PlanManager $planManager, $reference_id, $status=\XeroPHP\Models\Accounting\Invoice::INVOICE_STATUS_DRAFT){
 
 
         $this->log->addInfo("Create Invoice Receivable....".$planManager->company->admin->xero->xero_guid);
@@ -162,7 +162,7 @@ class LaravelXero {
 
 
         $this->invoice  =   new \XeroPHP\Models\Accounting\Invoice();
-        $this->invoice->setStatus(\XeroPHP\Models\Accounting\Invoice::INVOICE_STATUS_DRAFT);
+        $this->invoice->setStatus($status);
         $this->invoice->setType(\XeroPHP\Models\Accounting\Invoice::INVOICE_TYPE_ACCREC);
         $this->invoice->setContact($contact);
         $this->invoice->setReference($reference_id);
